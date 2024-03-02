@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css">
+<title>Number Guessing Game</title>
+</head>
+<body>
+    <div id="container">
+        <div id="gameArea">
+            <h1>Number Guessing Game</h1>
+            <div id="startPage">
+                <h2>Select Difficulty Level</h2>
+                <button onclick="startGame('easy')">Easy (1-5)</button>
+                <button onclick="startGame('medium')">Medium (1-10)</button>
+                <button onclick="startGame('hard')">Hard (1-15)</button>
+            </div>
+            <div id="gamePage" style="display: none;">
+                <div id="stickman" style="display: none;">
+                    <pre id="stickmanPre">   
+                    </pre>
+                </div>
+                
+                <p>I'm thinking of a number.</p>
+                <p>Enter your guess:</p>
+                <input type="text" id="guessInput">
+                <br>
+                <button onclick="checkGuess()">Guess</button>
+                <p id="result"></p>
+                <button id="nextGuessBtn" style="display: none;" onclick="nextGuess()">Next Guess</button>
+                <button onclick="provideHint()">Hint</button>
+            </div>
+        </div>
+        <div id="scoreboard">
+            <h2>Scoreboard</h2>
+            <p id="score">Score: 0</p>
+            <p id="attempts" style="display: none;">Attempts left: 3</p>
+        </div>
+    </div>
+    <div id="gameOverModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeGameOverModal()">&times;</span>
+        <p id="gameOverMessage">Game Over</p>
+        <p id="finalScore"></p>
+        <button id="restartGameBtn" onclick="restartGame()">Restart Game</button>
+      </div>
+    </div>
+    <script>
+        let secretNumber;
+        let minNumber;
+        let maxNumber;
+        let attempts;
+        let score = 0;
+        let guessedCorrectly = false; // Variable to track whether the correct number has been guessed
+        let stickmanArt = [
+            "  O  ",
+            " /|\\ ",
+            " / \\ "
+        ];
+
+        function displayStickman() {
+            let stickmanDiv = document.getElementById("stickman");
+            stickmanDiv.style.display = "block"; // Show the stickman
+            let stickmanPre = document.getElementById("stickmanPre");
+            stickmanPre.innerText = stickmanArt.join("\n");
+        }
+
+        function updateStickman() {
+            let stickmanDiv = document.getElementById("stickman");
+            stickmanDiv.style.display = "block"; // Show the stickman
+            let stickmanPre = document.getElementById("stickmanPre");
+            if (attempts === 1) {
+                stickmanPre.innerText = stickmanArt[0]; // Display only head when 1 attempt left
+            } else if (attempts === 2) {
+                stickmanPre.innerText = stickmanArt.slice(0, 2).join("\n"); // Display head and body when 2 attempts left
+            } else if (attempts === 3) {
+                stickmanPre.innerText = stickmanArt.join("\n"); // Display full stickman when 3 attempts left or game over
+            }
+        }
+
+        function openGameOverModal(message) {
+            const gameOverModal = document.getElementById('gameOverModal');
+            const gameOverMessage = document.getElementById('gameOverMessage');
+            const finalScore = document.getElementById('finalScore');
+
+            gameOverMessage.innerText = message;
+            finalScore.innerText = `Your final score is: ${score}`;
+
+            gameOverModal.style.display = 'block';
+        }
+
+        function closeGameOverModal() {
+            const gameOverModal = document.getElementById('gameOverModal');
+            gameOverModal.style.display = 'none';
+        }
+
+        function initializeGame(difficulty) {
+            switch (difficulty) {
+                case "easy":
+                    minNumber = 1;
+                    maxNumber = 5;
+                    attempts = 3;
+                    break;
+                case "medium":
+                    minNumber = 1;
+                    maxNumber = 10;
+                    attempts = 3;
+                    break;
+                case "hard":
+                    minNumber = 1;
+                    maxNumber = 15;
+                    attempts = 3;
+                    break;
+                default:
+                    minNumber = 1;
+                    maxNumber = 100; // Default to easy
+                    attempts = 3;
+            }
+            secretNumber = Math.floor(Math.random() * (maxNumber - minNumber + 1)) + minNumber;
+            updateScoreboard();
+        }
+
+        function startGame(difficulty) {
+            guessedCorrectly = false; // Reset guessedCorrectly when starting a new game
+            initializeGame(difficulty);
+            document.getElementById("startPage").style.display = "none";
+            document.getElementById("gamePage").style.display = "block";
+            document.getElementById("guessInput").disabled = false;
+            document.getElementById("result").innerText = "";
+            document.getElementById("nextGuessBtn").style.display = "none";
+            document.getElementById("attempts").style.display = "block"; // Show attempts on game page
+            displayStickman();
+        }
+
+        function updateScoreboard() {
+            document.getElementById("score").innerText = `Score: ${score}`;
+            document.getElementById("attempts").innerText = `Attempts left: ${attempts}`;
+        }
+
+        function checkGuess() {
+            let guess = parseInt(document.getElementById("guessInput").value);
+            if (isNaN(guess) || guess < minNumber || guess > maxNumber) {
+                document.getElementById("result").innerText = `Please enter a valid number between ${minNumber} and ${maxNumber}.`;
+            } else {
+                if (guess === secretNumber) {
+                    let scoreIncrement = 0;
+                    if (!guessedCorrectly) {
+                        // Increment score only if the guess is correct and it hasn't been guessed before
+                        switch (maxNumber) {
+                            case 5:
+                                scoreIncrement = 5; // Score increment for easy difficulty
+                                break;
+                            case 10:
+                                scoreIncrement = 10; // Score increment for medium difficulty
+                                break;
+                            case 15:
+                                scoreIncrement = 20; // Score increment for hard difficulty
+                                break;
+                        }
+                        score += scoreIncrement;
+                        guessedCorrectly = true;
+                    }
+                    document.getElementById("result").innerText = `Congratulations! You've guessed the number ${secretNumber} correctly! Your score is ${score}.`;
+                    document.getElementById("guessInput").disabled = true;
+                    document.getElementById("nextGuessBtn").style.display = "inline-block";
+                    attempts = 3; // Reset attempts only when the game is won
+                } else {
+                    document.getElementById("result").innerText = "Incorrect guess. Try again!";
+                    attempts--;
+                    updateStickman();
+                }
+
+                updateScoreboard();
+
+                if (attempts === 0 && !guessedCorrectly) {
+                    document.getElementById("result").innerText = `Game Over! The secret number was ${secretNumber}.`;
+                    document.getElementById("guessInput").disabled = true;
+                    document.getElementById("nextGuessBtn").style.display = "inline-block";
+                    openGameOverModal("You have lost all attempts. Please try again."); // Display modal message
+                    document.getElementById("guessInput").value = ""; // Clear input box
+                    document.getElementById("startPage").style.display = "block"; // Show start page
+                    document.getElementById("gamePage").style.display = "none"; // Hide game page
+                    document.getElementById("attempts").style.display = "none"; // Hide attempts on game page
+                }
+            }
+        }
+
+        function nextGuess() {
+            document.getElementById("gamePage").style.display = "none";
+            document.getElementById("startPage").style.display = "block";
+            document.getElementById("guessInput").value = "";
+            document.getElementById("nextGuessBtn").style.display = "none";
+        }
+
+        let hintCount = 0; // Variable to track the number of hints given in the current round
+
+        function provideHint() {
+            if (hintCount < 3) {
+                hintCount++;
+                if (secretNumber > parseInt(document.getElementById("guessInput").value)) {
+                    document.getElementById("result").innerText = "Hint: The secret number is higher.";
+                } else {
+                    document.getElementById("result").innerText = "Hint: The secret number is lower.";
+                }
+            } else {
+                document.getElementById("result").innerText = "You have used all your hints for this round.";
+            }
+        }
+
+        function initializeGame(difficulty) {
+            switch (difficulty) {
+                case "easy":
+                    minNumber = 1;
+                    maxNumber = 5;
+                    attempts = 3;
+                    break;
+                case "medium":
+                    minNumber = 1;
+                    maxNumber = 10;
+                    attempts = 3;
+                    break;
+                case "hard":
+                    minNumber = 1;
+                    maxNumber = 15;
+                    attempts = 3;
+                    break;
+                default:
+                    minNumber = 1;
+                    maxNumber = 100; // Default to easy
+                    attempts = 3;
+            }
+            secretNumber = Math.floor(Math.random() * (maxNumber - minNumber + 1)) + minNumber;
+            updateScoreboard();
+            hintCount = 0; // Reset hint count at the start of each game
+        }
+
+        function restartGame() {
+            closeGameOverModal();
+            document.getElementById("startPage").style.display = "block";
+            document.getElementById("gamePage").style.display = "none";
+            document.getElementById("attempts").style.display = "none";
+            score = 0;
+            updateScoreboard();
+        }
+    </script>
+</body>
+</html>
